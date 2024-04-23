@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background: linear-gradient(270deg, #6a11cb, #2575fc);
+            background-size: 400% 400%;
+            animation: AnimationName 15s ease infinite;
+            color: white;
+        }
+
+        @keyframes AnimationName {
+            0%{background-position:0% 50%}
+            50%{background-position:100% 50%}
+            100%{background-position:0% 50%}
+        }
+
+        #searchBox {
+            width: calc(100% - 100px);
+            margin-bottom: 20px;
+            border: none;
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            display: inline-block;
+        }
+
+        #searchButton {
+            width: 80px;
+            margin-left: -10px; /* Adjusted for seamless alignment */
+            vertical-align: top;
+            display: inline-block;
+        }
+
+        #items {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 16px rgba(0,0,0,0.3);
+        }
+
+        .item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            transition: transform 0.3s;
+        }
+
+        .item img:hover {
+            transform: scale(1.1);
+        }
+
+        .description h3 {
+            margin-bottom: 5px;
+            color: #E3F2FD;
+        }
+
+        .description p {
+            margin: 0;
+            color: #BBDEFB;
+        }
+
+        #loading {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="searchBox" class="form-control" placeholder="Search...">
+        <button id="searchButton" class="btn btn-primary" onclick="searchItems()">Search</button>
+        <div id="loading"></div>
+        <div id="items">
+            {% for name, data in items.items() %}
+            <div class="item">
+                <img src="{{ url_for('static', filename=data[0]) }}" alt="{{ name }}">
+                <div class="description">
+                    <h3>{{ name }}</h3>
+                    <p>{{ data[1] }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function searchItems() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block'; // Show loading animation
+
+            const query = document.getElementById('searchBox').value;
+            fetch('/search?query=' + query)
+                .then(response => response.text()) // Get the response as text
+                .then(text => {
+                    // Try to manually replace problematic parts if predictable, e.g., 'NaN'
+                    const safeText = text.replace(/NaN/g, 'null');
+                    return JSON.parse(safeText);
+                })
+                .then(data => {
+                    const itemsContainer = document.getElementById('items');
+                    itemsContainer.innerHTML = '';
+                    data.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'item';
+                        itemDiv.innerHTML = `
+                            <img src="/static/${item.image}" alt="${item.name}">
+                            <div class="description">
+                                <h3>${item.name}</h3>
+                                <p>${item.description}</p>
+                            </div>
+                        `;
+                        itemsContainer.appendChild(itemDiv);
+                    });
+                    loading.style.display = 'none'; // Hide loading animation
+                })
+                .catch(error => {
+                    console.error('Error processing data:', error);
+                    alert('Failed to process data due to a format error.');
+                    loading.style.display = 'none'; // Ensure loading is hidden on error
+                });
+        }
+    </script>
+</body>
+</html>
